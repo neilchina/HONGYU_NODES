@@ -23,6 +23,12 @@ function syncOutputs(node) {
   if (!totalWidget || !trueWidget) return;
 
   const total = Math.max(1, Math.min(totalWidget.value, MAX_OUTPUTS));
+  if (trueWidget.value > total) {
+    trueWidget.value = total;
+  }
+  if (trueWidget.options) {
+    trueWidget.options.max = total;
+  }
   const trueCount = Math.max(0, Math.min(trueWidget.value, total));
 
   while (node.outputs.length > total) {
