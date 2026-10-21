@@ -3,9 +3,9 @@ import { app } from "../../scripts/app.js";
 const MAX_OUTPUTS = 64;
 
 app.registerExtension({
-  name: "HONGYU.MultiBool",
+  name: "HONGYU.HongyuNodes",
   async beforeRegisterNodeDef(nodeType, nodeData) {
-    if (nodeData.name !== "MultiBool") return;
+    if (nodeData.name !== "HongyuNodes") return;
 
     const onNodeCreated = nodeType.prototype.onNodeCreated;
     nodeType.prototype.onNodeCreated = function () {

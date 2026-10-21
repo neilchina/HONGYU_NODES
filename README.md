@@ -8,7 +8,7 @@ Place this folder in `ComfyUI/custom_nodes/` and restart ComfyUI.
 
 ## Nodes
 
-- **MultiBool** (`HONGYU`): `total` sets how many BOOLEAN outputs appear (max 64),
+- **HongyuNodes** (`HONGYU`): `total` sets how many BOOLEAN outputs appear (max 64),
   `true_count` sets how many of them are True (the first ones).
 
 ## Structure
