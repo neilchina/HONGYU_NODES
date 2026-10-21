@@ -21,8 +21,15 @@ function propagateToDownstream(node, trueCount) {
       const inputName = target.inputs?.[link.target_slot]?.name;
       if (!inputName) continue;
       const widget = target.widgets?.find((w) => w.name === inputName);
-      if (widget && widget.value !== (i < trueCount)) {
-        widget.value = i < trueCount;
+      const value = i < trueCount;
+      if (widget && widget.value !== value) {
+        widget.value = value;
+        if (target.type === "DaSiWa_NodeStatusSwitch" && inputName === "enabled") {
+          // Fire the switch's own callback so it applies the mode to its
+          // target nodes live (its mirror loop can't read our multi-output
+          // node, so it falls back to this local widget value).
+          widget.callback?.(value);
+        }
         target.setDirtyCanvas(true, true);
       }
     }
@@ -97,6 +104,13 @@ app.registerExtension({
       const result = onConfigure?.apply(this, arguments);
       attach(this);
       syncOutputs(this);
+      requestAnimationFrame(() => syncOutputs(this));
+      return result;
+    };
+
+    const onConnectionsChange = nodeType.prototype.onConnectionsChange;
+    nodeType.prototype.onConnectionsChange = function () {
+      const result = onConnectionsChange?.apply(this, arguments);
       requestAnimationFrame(() => syncOutputs(this));
       return result;
     };
