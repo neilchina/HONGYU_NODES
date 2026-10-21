@@ -20,7 +20,8 @@ class MultiBool(io.ComfyNode):
 
     @classmethod
     def execute(cls, total, true_count):
-        true_count = min(true_count, total)
+        total = max(1, min(total, MAX_OUTPUTS))
+        true_count = max(0, min(true_count, total))
         return io.NodeOutput(*([True] * true_count + [False] * (total - true_count)))
 
 

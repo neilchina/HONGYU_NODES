@@ -24,9 +24,9 @@ function syncOutputs(node) {
   if (!totalWidget || !trueWidget) return;
 
   const total = Math.max(1, Math.min(totalWidget.value, MAX_OUTPUTS));
-  if (trueWidget.value > total) trueWidget.value = total;
-  if (trueWidget.options) trueWidget.options.max = total;
   const trueCount = Math.max(0, Math.min(trueWidget.value, total));
+  if (trueWidget.value !== trueCount) trueWidget.value = trueCount;
+  if (trueWidget.options) trueWidget.options.max = total;
   const previousCount = node.outputs.length;
 
   while (node.outputs.length > total) {
@@ -46,6 +46,26 @@ function syncOutputs(node) {
   node.setDirtyCanvas(true, true);
 }
 
+function attach(node) {
+  if (node._multiBoolAttached) return;
+  const totalWidget = node.widgets?.find((w) => w.name === "total");
+  const trueWidget = node.widgets?.find((w) => w.name === "true_count");
+  if (!totalWidget || !trueWidget) return;
+  node._multiBoolAttached = true;
+
+  const sync = () => {
+    syncOutputs(node);
+    scheduleQueue();
+  };
+  for (const widget of [totalWidget, trueWidget]) {
+    const original = widget.callback;
+    widget.callback = (...args) => {
+      original?.apply(widget, args);
+      sync();
+    };
+  }
+}
+
 app.registerExtension({
   name: "HONGYU.MultiBool",
   async beforeRegisterNodeDef(nodeType, nodeData) {
@@ -54,23 +74,19 @@ app.registerExtension({
     const onNodeCreated = nodeType.prototype.onNodeCreated;
     nodeType.prototype.onNodeCreated = function () {
       const result = onNodeCreated?.apply(this, arguments);
-      const totalWidget = this.widgets?.find((w) => w.name === "total");
-      const trueWidget = this.widgets?.find((w) => w.name === "true_count");
-      if (totalWidget && trueWidget) {
-        const sync = () => {
-          syncOutputs(this);
-          scheduleQueue();
-        };
-        totalWidget.callback = sync;
-        trueWidget.callback = sync;
-      }
-      requestAnimationFrame(() => syncOutputs(this));
+      attach(this);
+      syncOutputs(this);
+      requestAnimationFrame(() => {
+        attach(this);
+        syncOutputs(this);
+      });
       return result;
     };
 
     const onConfigure = nodeType.prototype.onConfigure;
     nodeType.prototype.onConfigure = function () {
       const result = onConfigure?.apply(this, arguments);
+      attach(this);
       syncOutputs(this);
       requestAnimationFrame(() => syncOutputs(this));
       return result;
@@ -79,6 +95,9 @@ app.registerExtension({
 
   async loadedGraphNode(node) {
     if (node.type !== NODE_TYPE) return;
-    requestAnimationFrame(() => syncOutputs(node));
+    requestAnimationFrame(() => {
+      attach(node);
+      syncOutputs(node);
+    });
   },
 });
