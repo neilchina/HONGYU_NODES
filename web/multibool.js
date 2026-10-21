@@ -1,6 +1,21 @@
 import { app } from "../../scripts/app.js";
 
 const MAX_OUTPUTS = 64;
+const QUEUE_DELAY_MS = 300;
+
+let queueTimer = null;
+
+function scheduleQueue() {
+  clearTimeout(queueTimer);
+  queueTimer = setTimeout(() => {
+    queueTimer = null;
+    app.queuePrompt(0, 1);
+  }, QUEUE_DELAY_MS);
+}
+
+function outputName(index, trueCount) {
+  return `bool_${index + 1} (${index < trueCount ? "True" : "False"})`;
+}
 
 function syncOutputs(node) {
   const totalWidget = node.widgets?.find((w) => w.name === "total");
@@ -14,10 +29,12 @@ function syncOutputs(node) {
     node.removeOutput(node.outputs.length - 1);
   }
   while (node.outputs.length < total) {
-    node.addOutput("", "BOOLEAN");
+    node.addOutput(outputName(node.outputs.length, trueCount), "BOOLEAN");
   }
   for (let i = 0; i < total; i++) {
-    node.outputs[i].label = `bool_${i + 1} (${i < trueCount ? "True" : "False"})`;
+    const name = outputName(i, trueCount);
+    node.outputs[i].name = name;
+    node.outputs[i].label = name;
   }
   node.setDirtyCanvas(true, true);
 }
@@ -33,10 +50,14 @@ app.registerExtension({
       const totalWidget = this.widgets?.find((w) => w.name === "total");
       const trueWidget = this.widgets?.find((w) => w.name === "true_count");
       if (totalWidget && trueWidget) {
-        const sync = () => syncOutputs(this);
-        sync();
+        const sync = () => {
+          syncOutputs(this);
+          scheduleQueue();
+        };
+        syncOutputs(this);
         totalWidget.callback = sync;
         trueWidget.callback = sync;
+        setTimeout(() => syncOutputs(this), 0);
       }
       return result;
     };
@@ -45,6 +66,7 @@ app.registerExtension({
     nodeType.prototype.onConfigure = function () {
       const result = onConfigure?.apply(this, arguments);
       syncOutputs(this);
+      setTimeout(() => syncOutputs(this), 0);
       return result;
     };
   },
