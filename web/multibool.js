@@ -7,31 +7,49 @@ function outputName(index, trueCount) {
   return `bool_${index + 1} (${index < trueCount ? "True" : "False"})`;
 }
 
+function getLinkIds(node, index) {
+  const fromSlot = node.outputs?.[index]?.links;
+  if (fromSlot != null) {
+    return Array.isArray(fromSlot) ? fromSlot : [fromSlot];
+  }
+  const raw = node.outputLinks?.[index];
+  if (raw == null) return [];
+  return Array.isArray(raw) ? raw : [raw];
+}
+
+function getLink(graph, linkId) {
+  if (linkId == null) return null;
+  return (
+    graph.getLink?.(linkId) ??
+    graph.links?.[linkId] ??
+    graph._links?.get?.(linkId) ??
+    null
+  );
+}
+
 function propagateToDownstream(node, trueCount) {
   const graph = node.graph;
   if (!graph) return;
+  const allNodes = graph._nodes ?? graph.nodes ?? [];
   for (let i = 0; i < node.outputs.length; i++) {
-    const linkIds = node.outputLinks?.[i];
-    if (!linkIds) continue;
-    for (const linkId of linkIds) {
-      const link = graph.links?.[linkId];
+    const value = i < trueCount;
+    for (const linkId of getLinkIds(node, i)) {
+      const link = getLink(graph, linkId);
       if (!link) continue;
-      const target = graph.getNodeById?.(link.target_id);
+      const target = allNodes.find((n) => n.id === link.target_id);
       if (!target) continue;
       const inputName = target.inputs?.[link.target_slot]?.name;
       if (!inputName) continue;
       const widget = target.widgets?.find((w) => w.name === inputName);
-      const value = i < trueCount;
-      if (widget && widget.value !== value) {
-        widget.value = value;
-        if (target.type === "DaSiWa_NodeStatusSwitch" && inputName === "enabled") {
-          // Fire the switch's own callback so it applies the mode to its
-          // target nodes live (its mirror loop can't read our multi-output
-          // node, so it falls back to this local widget value).
-          widget.callback?.(value);
-        }
-        target.setDirtyCanvas(true, true);
+      if (!widget || widget.value === value) continue;
+      widget.value = value;
+      if (target.type === "DaSiWa_NodeStatusSwitch" && inputName === "enabled") {
+        // Fire the switch's own callback so it applies the mode to its
+        // target nodes live (its mirror loop can't read our multi-output
+        // node, so it falls back to this local widget value).
+        widget.callback?.(value);
       }
+      target.setDirtyCanvas(true, true);
     }
   }
 }
