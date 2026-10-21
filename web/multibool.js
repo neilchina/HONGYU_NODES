@@ -1,5 +1,6 @@
 import { app } from "../../scripts/app.js";
 
+const NODE_TYPE = "MultiBool";
 const MAX_OUTPUTS = 64;
 const QUEUE_DELAY_MS = 300;
 
@@ -23,24 +24,24 @@ function syncOutputs(node) {
   if (!totalWidget || !trueWidget) return;
 
   const total = Math.max(1, Math.min(totalWidget.value, MAX_OUTPUTS));
-  if (trueWidget.value > total) {
-    trueWidget.value = total;
-  }
-  if (trueWidget.options) {
-    trueWidget.options.max = total;
-  }
+  if (trueWidget.value > total) trueWidget.value = total;
+  if (trueWidget.options) trueWidget.options.max = total;
   const trueCount = Math.max(0, Math.min(trueWidget.value, total));
+  const previousCount = node.outputs.length;
 
   while (node.outputs.length > total) {
     node.removeOutput(node.outputs.length - 1);
   }
   while (node.outputs.length < total) {
-    node.addOutput(outputName(node.outputs.length, trueCount), "BOOLEAN");
+    node.addOutput("", "BOOLEAN");
   }
   for (let i = 0; i < total; i++) {
     const name = outputName(i, trueCount);
     node.outputs[i].name = name;
     node.outputs[i].label = name;
+  }
+  if (node.outputs.length !== previousCount) {
+    node.setSize(node.computeSize());
   }
   node.setDirtyCanvas(true, true);
 }
@@ -48,7 +49,7 @@ function syncOutputs(node) {
 app.registerExtension({
   name: "HONGYU.MultiBool",
   async beforeRegisterNodeDef(nodeType, nodeData) {
-    if (nodeData.name !== "MultiBool") return;
+    if (nodeData.name !== NODE_TYPE) return;
 
     const onNodeCreated = nodeType.prototype.onNodeCreated;
     nodeType.prototype.onNodeCreated = function () {
@@ -60,11 +61,10 @@ app.registerExtension({
           syncOutputs(this);
           scheduleQueue();
         };
-        syncOutputs(this);
         totalWidget.callback = sync;
         trueWidget.callback = sync;
-        setTimeout(() => syncOutputs(this), 0);
       }
+      requestAnimationFrame(() => syncOutputs(this));
       return result;
     };
 
@@ -72,8 +72,13 @@ app.registerExtension({
     nodeType.prototype.onConfigure = function () {
       const result = onConfigure?.apply(this, arguments);
       syncOutputs(this);
-      setTimeout(() => syncOutputs(this), 0);
+      requestAnimationFrame(() => syncOutputs(this));
       return result;
     };
+  },
+
+  async loadedGraphNode(node) {
+    if (node.type !== NODE_TYPE) return;
+    requestAnimationFrame(() => syncOutputs(node));
   },
 });

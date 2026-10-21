@@ -1,21 +1,29 @@
+from comfy_api.latest import ComfyExtension, io
+
 MAX_OUTPUTS = 64
+OUTPUT_NAMES = tuple(f"bool_{i + 1}" for i in range(MAX_OUTPUTS))
 
 
-class MultiBool:
+class MultiBool(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "total": ("INT", {"default": 4, "min": 1, "max": MAX_OUTPUTS, "step": 1}),
-                "true_count": ("INT", {"default": 1, "min": 0, "max": MAX_OUTPUTS, "step": 1}),
-            }
-        }
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MultiBool",
+            display_name="MultiBool",
+            category="HONGYU",
+            inputs=[
+                io.Int.Input("total", default=4, min=1, max=MAX_OUTPUTS),
+                io.Int.Input("true_count", default=1, min=0, max=MAX_OUTPUTS),
+            ],
+            outputs=[io.Boolean.Output(name) for name in OUTPUT_NAMES],
+        )
 
-    RETURN_TYPES = ("BOOLEAN",) * MAX_OUTPUTS
-    RETURN_NAMES = tuple(f"bool_{i + 1}" for i in range(MAX_OUTPUTS))
-    FUNCTION = "build"
-    CATEGORY = "HONGYU"
-
-    def build(self, total, true_count):
+    @classmethod
+    def execute(cls, total, true_count):
         true_count = min(true_count, total)
-        return tuple([True] * true_count + [False] * (total - true_count))
+        return io.NodeOutput(*([True] * true_count + [False] * (total - true_count)))
+
+
+class MultiBoolExtension(ComfyExtension):
+    async def get_node_list(self):
+        return [MultiBool]

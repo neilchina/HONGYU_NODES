@@ -15,14 +15,9 @@ Place this folder in `ComfyUI/custom_nodes/` and restart ComfyUI.
 
 ```
 HONGYU_NODES/
-├── __init__.py    # node mappings and web directory
-├── nodes.py       # node implementations
+├── __init__.py    # comfy_entrypoint and web directory
+├── nodes.py       # V3 node implementations
 └── web/           # optional frontend extensions
 ```
 
-Add a node to `nodes.py` and register it in `__init__.py`:
-
-```python
-NODE_CLASS_MAPPINGS = {"HongyuExample": HongyuExample}
-NODE_DISPLAY_NAME_MAPPINGS = {"HongyuExample": "Hongyu Example"}
-```
+Add a node class to `nodes.py` and return it from `MultiBoolExtension.get_node_list`.

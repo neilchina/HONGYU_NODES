@@ -1,13 +1,7 @@
-from .nodes import MultiBool
-
-NODE_CLASS_MAPPINGS = {
-    "MultiBool": MultiBool,
-}
-
-NODE_DISPLAY_NAME_MAPPINGS = {
-    "MultiBool": "MultiBool",
-}
+from .nodes import MultiBoolExtension
 
 WEB_DIRECTORY = "./web"
 
-__all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS", "WEB_DIRECTORY"]
+
+async def comfy_entrypoint():
+    return MultiBoolExtension()
