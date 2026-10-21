@@ -1,11 +1,11 @@
 from .nodes import MultiBool
 
 NODE_CLASS_MAPPINGS = {
-    "HongyuNodes": MultiBool,
+    "MultiBool": MultiBool,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "HongyuNodes": "HongyuNodes",
+    "MultiBool": "MultiBool",
 }
 
 WEB_DIRECTORY = "./web"
