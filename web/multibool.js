@@ -2,20 +2,31 @@ import { app } from "../../scripts/app.js";
 
 const NODE_TYPE = "MultiBool";
 const MAX_OUTPUTS = 64;
-const QUEUE_DELAY_MS = 300;
-
-let queueTimer = null;
-
-function scheduleQueue() {
-  clearTimeout(queueTimer);
-  queueTimer = setTimeout(() => {
-    queueTimer = null;
-    app.queuePrompt(0, 1);
-  }, QUEUE_DELAY_MS);
-}
 
 function outputName(index, trueCount) {
   return `bool_${index + 1} (${index < trueCount ? "True" : "False"})`;
+}
+
+function propagateToDownstream(node, trueCount) {
+  const graph = node.graph;
+  if (!graph) return;
+  for (let i = 0; i < node.outputs.length; i++) {
+    const linkIds = node.outputLinks?.[i];
+    if (!linkIds) continue;
+    for (const linkId of linkIds) {
+      const link = graph.links?.[linkId];
+      if (!link) continue;
+      const target = graph.getNodeById?.(link.target_id);
+      if (!target) continue;
+      const inputName = target.inputs?.[link.target_slot]?.name;
+      if (!inputName) continue;
+      const widget = target.widgets?.find((w) => w.name === inputName);
+      if (widget && widget.value !== (i < trueCount)) {
+        widget.value = i < trueCount;
+        target.setDirtyCanvas(true, true);
+      }
+    }
+  }
 }
 
 function syncOutputs(node) {
@@ -43,6 +54,7 @@ function syncOutputs(node) {
   if (node.outputs.length !== previousCount) {
     node.setSize(node.computeSize());
   }
+  propagateToDownstream(node, trueCount);
   node.setDirtyCanvas(true, true);
 }
 
@@ -53,10 +65,7 @@ function attach(node) {
   if (!totalWidget || !trueWidget) return;
   node._multiBoolAttached = true;
 
-  const sync = () => {
-    syncOutputs(node);
-    scheduleQueue();
-  };
+  const sync = () => syncOutputs(node);
   for (const widget of [totalWidget, trueWidget]) {
     const original = widget.callback;
     widget.callback = (...args) => {
