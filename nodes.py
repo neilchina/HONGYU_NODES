@@ -85,7 +85,8 @@ class ImageBatchMulti:
     RETURN_TYPES = ("IMAGE",)
     RETURN_NAMES = ("images",)
     FUNCTION = "combine"
-    CATEGORY = "HONGYU_NODES"
+    CATEGORY = "HONGYU"
+    RELATIVE_PYTHON_MODULE = "custom_nodes.HONGYU_NODES"
     DESCRIPTION = """
 Creates an image batch from multiple images.
 Set how many inputs the node has with the **inputcount** widget and update the slots.
