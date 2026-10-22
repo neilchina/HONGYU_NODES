@@ -25,6 +25,37 @@ class MultiBool(io.ComfyNode):
         return io.NodeOutput(*([True] * true_count + [False] * (total - true_count)))
 
 
-class MultiBoolExtension(ComfyExtension):
+def _ref_gate(node_id, display_name, value_name, io_type):
+    """Builds a node that passes a reference on, or drops it when the flag is off."""
+
+    class RefGate(io.ComfyNode):
+        @classmethod
+        def define_schema(cls):
+            return io.Schema(
+                node_id=node_id,
+                display_name=display_name,
+                category="HONGYU",
+                inputs=[
+                    io.Boolean.Input("use", default=True,
+                                     tooltip="When off the reference is dropped and the model ignores it."),
+                    io_type.Input(value_name, optional=True),
+                ],
+                outputs=[io_type.Output(value_name)],
+            )
+
+        @classmethod
+        def execute(cls, use, **kwargs):
+            return io.NodeOutput(kwargs.get(value_name) if use else None)
+
+    RefGate.__name__ = node_id
+    RefGate.__qualname__ = node_id
+    return RefGate
+
+
+RefImageGate = _ref_gate("RefImageGate", "Ref Image Gate", "image", io.Image)
+RefAudioGate = _ref_gate("RefAudioGate", "Ref Audio Gate", "audio", io.Audio)
+
+
+class HONGYUExtension(ComfyExtension):
     async def get_node_list(self):
-        return [MultiBool]
+        return [MultiBool, RefImageGate, RefAudioGate]

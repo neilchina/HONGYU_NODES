@@ -1,7 +1,7 @@
-from .nodes import MultiBoolExtension
+from .nodes import HONGYUExtension
 
 WEB_DIRECTORY = "./web"
 
 
 async def comfy_entrypoint():
-    return MultiBoolExtension()
+    return HONGYUExtension()
