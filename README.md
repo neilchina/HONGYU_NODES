@@ -13,6 +13,9 @@ Place this folder in `ComfyUI/custom_nodes/` and restart ComfyUI.
 - **Ref Image Gate** (`HONGYU`): passes a reference image on, or drops it (None) when
   `use` is False. The model ignores dropped references.
 - **Ref Audio Gate** (`HONGYU`): the same for reference audio.
+- **Image Batch Multi** (`HONGYU_NODES`): batches images into one batch. It takes over
+  the KJNodes node of the same name, with the same interface, and additionally skips a
+  slot that is set to None instead of crashing on it.
 
 A reference count is usually driven by a `MultiBool`: every `bool_i` output feeds one
 gate, so `true_count` decides how many references reach the model. The gates make the
